@@ -70,6 +70,7 @@ export const AI_MODELS: AiModel[] = [
   { id: "sonar-reasoning", provider: "Perplexity", modelKey: "sonar-reasoning" },
   { id: "sonar-pro", provider: "Perplexity", modelKey: "sonar-pro" },
   { id: "sonar", provider: "Perplexity", modelKey: "sonar" },
+  { id: "kimi-k3", provider: "Moonshot", modelKey: "kimi-k3" },
   { id: "kimi-k2", provider: "Moonshot", modelKey: "kimi-k2" },
   { id: "kimi", provider: "Moonshot", modelKey: "moonshot-v1-128k" },
   { id: "yi-large", provider: "01.AI", modelKey: "yi-large" },
