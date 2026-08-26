@@ -7,9 +7,11 @@ import {
   PointerSensor,
   TouchSensor,
   closestCorners,
+  pointerWithin,
   useDroppable,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core"
@@ -33,11 +35,13 @@ import {
   AI_MODELS,
   POOL_ID,
   TIERS,
+  TIER_IDS,
   createInitialBoard,
   getModelById,
   getModelDisplayName,
   type AiModel,
   type ContainerId,
+  type TierId,
 } from "@/data/ai-models"
 import { cn } from "@/lib/utils"
 import { useMediaQuery } from "@/hooks/use-media-query"
@@ -48,6 +52,36 @@ import { TierRow } from "./tier-row"
 const EXPORT_TITLE = "AI Model Tierlist"
 const TIER_BOARD_FALLBACK_HEIGHT = 472
 const MOBILE_POOL_HEIGHT = 280
+
+const tierCollisionDetection: CollisionDetection = (args) => {
+  const pointerCollisions = pointerWithin(args)
+  if (pointerCollisions.length > 0) {
+    return pointerCollisions
+  }
+
+  return closestCorners(args)
+}
+
+function getContainerFromDroppableId(value: string): ContainerId | undefined {
+  if (value === POOL_ID) return POOL_ID
+
+  if (value.startsWith("tier-")) {
+    const tierId = value.slice(5) as TierId
+    if (TIER_IDS.includes(tierId)) return tierId
+  }
+
+  return undefined
+}
+
+function resolveOverContainer(
+  board: Record<ContainerId, string[]>,
+  overId: string
+): ContainerId | undefined {
+  const droppableContainer = getContainerFromDroppableId(overId)
+  if (droppableContainer) return droppableContainer
+
+  return findContainer(board, overId)
+}
 
 function findContainer(
   board: Record<ContainerId, string[]>,
@@ -62,8 +96,61 @@ function findContainer(
   return undefined
 }
 
-function isContainerId(value: string): value is ContainerId {
-  return value === POOL_ID || TIERS.some((tier) => tier.id === value)
+function moveItemBetweenContainers(
+  board: Record<ContainerId, string[]>,
+  activeItemId: string,
+  activeContainer: ContainerId,
+  overContainer: ContainerId,
+  overId: string,
+  activeTop?: number,
+  overRect?: { top: number; height: number }
+) {
+  if (activeContainer === overContainer) {
+    const items = [...board[activeContainer]]
+    const oldIndex = items.indexOf(activeItemId)
+    if (oldIndex === -1) return board
+
+    const overIndex = items.indexOf(overId)
+    if (overIndex === -1) {
+      if (oldIndex === items.length - 1) return board
+      items.splice(oldIndex, 1)
+      items.push(activeItemId)
+      return { ...board, [activeContainer]: items }
+    }
+
+    if (oldIndex === overIndex) return board
+
+    return {
+      ...board,
+      [activeContainer]: arrayMove(items, oldIndex, overIndex),
+    }
+  }
+
+  const activeItems = [...board[activeContainer]]
+  const overItems = [...board[overContainer]]
+  const activeIndex = activeItems.indexOf(activeItemId)
+  if (activeIndex === -1) return board
+
+  activeItems.splice(activeIndex, 1)
+
+  const overIndex = overItems.indexOf(overId)
+  if (overIndex >= 0) {
+    const insertIndex =
+      activeTop !== undefined &&
+      overRect &&
+      activeTop > overRect.top + overRect.height / 2
+        ? overIndex + 1
+        : overIndex
+    overItems.splice(insertIndex, 0, activeItemId)
+  } else {
+    overItems.push(activeItemId)
+  }
+
+  return {
+    ...board,
+    [activeContainer]: activeItems,
+    [overContainer]: overItems,
+  }
 }
 
 export function TierlistGenerator() {
@@ -146,44 +233,21 @@ export function TierlistGenerator() {
       const activeContainer = findContainer(current, activeItemId)
       if (!activeContainer) return current
 
-      let overContainer = findContainer(current, overId)
-      if (!overContainer && isContainerId(overId)) {
-        overContainer = overId
-      }
+      const overContainer = resolveOverContainer(current, overId)
       if (!overContainer) return current
 
-      if (activeContainer === overContainer) {
-        const items = current[activeContainer]
-        const oldIndex = items.indexOf(activeItemId)
-        const newIndex = items.indexOf(overId)
-        if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) {
-          return current
-        }
-        return {
-          ...current,
-          [activeContainer]: arrayMove(items, oldIndex, newIndex),
-        }
-      }
+      const activeTop = active.rect.current.translated?.top
+      const overRect = over.rect
 
-      const activeItems = [...current[activeContainer]]
-      const overItems = [...current[overContainer]]
-      const activeIndex = activeItems.indexOf(activeItemId)
-      if (activeIndex === -1) return current
-
-      activeItems.splice(activeIndex, 1)
-
-      const overIndex = overItems.indexOf(overId)
-      if (overIndex >= 0) {
-        overItems.splice(overIndex, 0, activeItemId)
-      } else {
-        overItems.push(activeItemId)
-      }
-
-      return {
-        ...current,
-        [activeContainer]: activeItems,
-        [overContainer]: overItems,
-      }
+      return moveItemBetweenContainers(
+        current,
+        activeItemId,
+        activeContainer,
+        overContainer,
+        overId,
+        activeTop,
+        overRect
+      )
     })
   }
 
@@ -246,7 +310,7 @@ export function TierlistGenerator() {
       <DndContext
         id="tierlist-board"
         sensors={sensors}
-        collisionDetection={closestCorners}
+        collisionDetection={tierCollisionDetection}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >

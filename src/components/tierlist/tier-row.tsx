@@ -4,8 +4,12 @@ import { useDroppable } from "@dnd-kit/core"
 import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable"
 
 import { cn } from "@/lib/utils"
-import type { AiModel, TierDefinition } from "@/data/ai-models"
+import type { AiModel, TierDefinition, TierId } from "@/data/ai-models"
 import { ModelChip } from "./model-chip"
+
+export function getTierDroppableId(tierId: TierId) {
+  return `tier-${tierId}`
+}
 
 type TierRowProps = {
   tier: TierDefinition
@@ -18,7 +22,7 @@ export function TierRow({
   modelIds,
   modelsById,
 }: TierRowProps) {
-  const { setNodeRef, isOver } = useDroppable({ id: tier.id })
+  const { setNodeRef, isOver } = useDroppable({ id: getTierDroppableId(tier.id) })
 
   return (
     <div className="grid min-h-14 grid-cols-[44px_1fr] overflow-hidden rounded-squircle-md border border-border sm:min-h-16 sm:grid-cols-[56px_1fr] md:min-h-[72px] md:grid-cols-[72px_1fr]">

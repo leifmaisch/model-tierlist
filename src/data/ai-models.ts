@@ -23,6 +23,7 @@ export const AI_MODELS: AiModel[] = [
   { id: "o3-mini", provider: "OpenAI", modelKey: "o3-mini" },
   { id: "o1", provider: "OpenAI", modelKey: "o1" },
   { id: "codex", provider: "OpenAI", modelKey: "codex" },
+  { id: "claude-fable-5", provider: "Anthropic", modelKey: "claude-fable-5" },
   { id: "claude-opus-4", provider: "Anthropic", modelKey: "claude-opus-4-20250514" },
   { id: "claude-sonnet-4", provider: "Anthropic", modelKey: "claude-sonnet-4-20250514" },
   { id: "claude-haiku-4", provider: "Anthropic", modelKey: "claude-haiku-4-20250514" },
