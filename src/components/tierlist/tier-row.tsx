@@ -21,9 +21,9 @@ export function TierRow({
   const { setNodeRef, isOver } = useDroppable({ id: tier.id })
 
   return (
-    <div className="grid min-h-[72px] grid-cols-[72px_1fr] overflow-hidden rounded-squircle-md border border-border">
+    <div className="grid min-h-14 grid-cols-[44px_1fr] overflow-hidden rounded-squircle-md border border-border sm:min-h-16 sm:grid-cols-[56px_1fr] md:min-h-[72px] md:grid-cols-[72px_1fr]">
       <div
-        className="flex items-center justify-center text-2xl font-bold"
+        className="flex items-center justify-center text-lg font-bold sm:text-xl md:text-2xl"
         style={{
           backgroundColor: tier.color,
           color: tier.textColor,
@@ -34,7 +34,7 @@ export function TierRow({
       <div
         ref={setNodeRef}
         className={cn(
-          "flex min-h-[72px] flex-wrap content-start gap-2 bg-background p-2",
+          "flex min-h-14 flex-wrap content-start gap-1.5 bg-background p-1.5 sm:min-h-16 sm:gap-2 sm:p-2 md:min-h-[72px]",
           isOver && "bg-muted/40"
         )}
       >

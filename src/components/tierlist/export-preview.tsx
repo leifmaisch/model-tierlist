@@ -1,6 +1,63 @@
+import { useEffect, useRef, useState, type RefObject, type ReactNode } from "react"
+
 import { ModelBrandIcon } from "./model-brand-icon"
 
 import { getModelDisplayName, type AiModel, type TierDefinition } from "@/data/ai-models"
+
+const EXPORT_WIDTH = 640
+
+type ExportPreviewScalerProps = {
+  exportRef: RefObject<HTMLDivElement | null>
+  children: ReactNode
+}
+
+export function ExportPreviewScaler({
+  exportRef,
+  children,
+}: ExportPreviewScalerProps) {
+  const frameRef = useRef<HTMLDivElement>(null)
+  const [layout, setLayout] = useState({ scale: 1, height: 0 })
+
+  useEffect(() => {
+    const frame = frameRef.current
+    const content = exportRef.current
+    if (!frame || !content) return
+
+    const update = () => {
+      const scale = Math.min(1, frame.clientWidth / EXPORT_WIDTH)
+      const height = content.getBoundingClientRect().height * scale
+      setLayout({ scale, height })
+    }
+
+    update()
+
+    const observer = new ResizeObserver(update)
+    observer.observe(frame)
+    observer.observe(content)
+
+    return () => observer.disconnect()
+  }, [exportRef])
+
+  return (
+    <div
+      ref={frameRef}
+      className="w-full overflow-hidden"
+      style={{ height: layout.height || undefined }}
+    >
+      <div
+        className="origin-top-left"
+        style={{
+          width: EXPORT_WIDTH,
+          transform: `scale(${layout.scale})`,
+        }}
+      >
+        <div ref={exportRef} className="w-[640px] space-y-0">
+          {children}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 type StaticModelChipProps = {
   model: AiModel

@@ -5,6 +5,7 @@ import {
   DndContext,
   DragOverlay,
   PointerSensor,
+  TouchSensor,
   closestCorners,
   useDroppable,
   useSensor,
@@ -39,12 +40,14 @@ import {
   type ContainerId,
 } from "@/data/ai-models"
 import { cn } from "@/lib/utils"
+import { useMediaQuery } from "@/hooks/use-media-query"
 import { ModelChip, ModelChipOverlay } from "./model-chip"
-import { StaticTierRow } from "./export-preview"
+import { StaticTierRow, ExportPreviewScaler } from "./export-preview"
 import { TierRow } from "./tier-row"
 
 const EXPORT_TITLE = "AI Model Tierlist"
 const TIER_BOARD_FALLBACK_HEIGHT = 472
+const MOBILE_POOL_HEIGHT = 280
 
 function findContainer(
   board: Record<ContainerId, string[]>,
@@ -71,10 +74,14 @@ export function TierlistGenerator() {
   const [tierBoardHeight, setTierBoardHeight] = useState(TIER_BOARD_FALLBACK_HEIGHT)
   const exportRef = useRef<HTMLDivElement>(null)
   const tierBoardRef = useRef<HTMLDivElement>(null)
+  const isLargeScreen = useMediaQuery("(min-width: 1024px)")
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 6 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 150, tolerance: 6 },
     })
   )
 
@@ -104,6 +111,7 @@ export function TierlistGenerator() {
     (total, tier) => total + board[tier.id].length,
     0
   )
+  const poolHeight = isLargeScreen ? tierBoardHeight : MOBILE_POOL_HEIGHT
 
   useEffect(() => {
     const node = tierBoardRef.current
@@ -203,23 +211,34 @@ export function TierlistGenerator() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:gap-6 sm:px-4 sm:py-8">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
         <div>
-          <h1 className="text-heading-xl">AI Model Tierlist</h1>
+          <h1 className="text-heading-lg sm:text-heading-xl">AI Model Tierlist</h1>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" shape="squircle" onClick={handleReset}>
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+          <Button
+            variant="outline"
+            shape="squircle"
+            className="w-full sm:w-auto"
+            onClick={handleReset}
+          >
             <RotateCcw />
             Reset
           </Button>
           <Button
             shape="squircle"
+            className="w-full sm:w-auto"
             onClick={handleDownload}
             disabled={isExporting || rankedCount === 0}
           >
             <Download />
-            {isExporting ? "Exporting..." : "Download PNG"}
+            <span className="sm:hidden">
+              {isExporting ? "..." : "PNG"}
+            </span>
+            <span className="hidden sm:inline">
+              {isExporting ? "Exporting..." : "Download PNG"}
+            </span>
           </Button>
         </div>
       </div>
@@ -231,11 +250,11 @@ export function TierlistGenerator() {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-start">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-start lg:gap-6">
           <Card>
-            <CardHeader className="items-center">
+            <CardHeader className="grid-cols-1 gap-3 has-data-[slot=card-action]:grid-cols-1 [&_[data-slot=card-action]]:col-start-1 [&_[data-slot=card-action]]:row-start-2 [&_[data-slot=card-action]]:w-full sm:grid-cols-[1fr_auto] sm:gap-1 sm:has-data-[slot=card-action]:grid-cols-[1fr_auto] sm:[&_[data-slot=card-action]]:col-start-2 sm:[&_[data-slot=card-action]]:row-start-1 sm:[&_[data-slot=card-action]]:w-auto">
               <CardTitle>Models ({board.pool.length})</CardTitle>
-              <CardAction className="w-full max-w-xs self-center sm:max-w-[220px]">
+              <CardAction className="w-full sm:max-w-[220px]">
                 <div className="grid w-full [&>*]:col-start-1 [&>*]:row-start-1">
                   <Input
                     value={search}
@@ -253,7 +272,7 @@ export function TierlistGenerator() {
               <PoolDropZone
                 modelIds={filteredPoolIds}
                 modelsById={modelsById}
-                maxHeight={tierBoardHeight}
+                maxHeight={poolHeight}
               />
             </CardContent>
           </Card>
@@ -287,8 +306,8 @@ export function TierlistGenerator() {
           <CardTitle>PNG Preview</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto rounded-squircle-lg border border-border bg-[#141414] p-4">
-            <div ref={exportRef} className="min-w-[640px] space-y-0">
+          <div className="rounded-squircle-lg border border-border bg-[#141414] p-2 sm:p-4">
+            <ExportPreviewScaler exportRef={exportRef}>
               <div className="border-b border-white/10 px-4 py-3">
                 <p className="text-lg font-semibold text-white">
                   {EXPORT_TITLE} ({rankedCount})
@@ -302,7 +321,7 @@ export function TierlistGenerator() {
                   modelsById={modelsById}
                 />
               ))}
-            </div>
+            </ExportPreviewScaler>
           </div>
         </CardContent>
       </Card>
@@ -312,7 +331,7 @@ export function TierlistGenerator() {
           <CardTitle>All Models</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          <div className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {AI_MODELS.map((model) => (
               <div
                 key={model.id}
@@ -356,7 +375,7 @@ function PoolDropZone({
       )}
     >
       <ScrollArea style={{ height: maxHeight }}>
-        <div className="grid grid-cols-1 gap-2 p-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-2 p-2.5 sm:grid-cols-2 sm:p-3">
           <SortableContext items={modelIds} strategy={rectSortingStrategy}>
             {modelIds.length === 0 ? (
               <p className="col-span-full py-8 text-center text-caption">
