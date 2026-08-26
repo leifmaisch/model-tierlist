@@ -5,9 +5,31 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 
 import "./globals.css"
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "AI Model Tierlist",
   description: "Create and download tier lists for AI models",
+  openGraph: {
+    title: "AI Model Tierlist",
+    description: "Create and download tier lists for AI models",
+    type: "website",
+    images: [
+      {
+        url: "/og.png",
+        width: 1280,
+        height: 970,
+        alt: "AI Model Tierlist",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "AI Model Tierlist",
+    description: "Create and download tier lists for AI models",
+    images: ["/og.png"],
+  },
 }
 
 export const viewport: Viewport = {
